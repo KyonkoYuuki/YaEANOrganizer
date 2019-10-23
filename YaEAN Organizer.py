@@ -15,7 +15,7 @@ from yaean.panels.bone_main import BoneMainPanel
 from yaean.panels.bone_side import BoneSidePanel
 from yaean.helpers import build_anim_list, build_bone_tree
 
-VERSION = '0.3.9'
+VERSION = '0.3.10'
 
 
 class MainWindow(wx.Frame):
