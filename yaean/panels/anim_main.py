@@ -406,9 +406,12 @@ class AnimMainPanel(wx.Panel):
         selected = list(get_selected_items(self.anim_list))
         if not selected:
             return
-        with RemoveKeyframesDialog(self) as dlg:
+        frame_count = None
+        if len(selected) == 1:
+            frame_count = int(self.anim_list.GetItem(selected[0], 2).GetText())
+        with RemoveKeyframesDialog(self, frame_count) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
-                flags = dlg.GetValues()
+                flags, start_frame, end_frame = dlg.GetValues()
                 animations = [self.root.main['ean'].animations[i] for i in selected]
                 bone_filters = []
                 item = self.root.main['ean_bone_list'].GetFirstItem()
@@ -427,7 +430,16 @@ class AnimMainPanel(wx.Panel):
                             if keyframed_animation.flag not in flags:
                                 keyframed_animations.append(keyframed_animation)
                             else:
-                                removed_keyframed_animations += 1
+                                if not frame_count or (start_frame == 0 and end_frame == frame_count):
+                                    removed_keyframed_animations += 1
+                                else:
+                                    new_keyframes = []
+                                    for keyframe in keyframed_animation.keyframes:
+                                        if keyframe.frame < start_frame or keyframe.frame >= end_frame:
+                                            new_keyframes.append(keyframe)
+                                    keyframed_animation.keyframes = new_keyframes
+                                    keyframed_animations.append(keyframed_animation)
+
                         node.keyframed_animations = keyframed_animations
 
                 self.root.SetStatusText("Removed {} keyframed animation(s) from {} animation(s)".format(
