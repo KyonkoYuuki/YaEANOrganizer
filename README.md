@@ -38,4 +38,5 @@ This tool to help edit ean and esk files for Xenoverse, among the features are:
 0.3.8 - Fixed a bug that happens when an animations has exactly 256 frames
 0.3.9 - Fixed adding prefix/suffix to animation/bone names as part of renaming them
 0.3.10 - Added ability to limit number of keyframes to remove
+0.3.11 - Added ability to drag/associate files to exe to open them
 ```
