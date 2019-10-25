@@ -15,11 +15,11 @@ from yaean.panels.bone_main import BoneMainPanel
 from yaean.panels.bone_side import BoneSidePanel
 from yaean.helpers import build_anim_list, build_bone_tree
 
-VERSION = '0.3.10'
+VERSION = '0.3.11'
 
 
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, dirname, filename):
         sys.excepthook = self.exception_hook
         self.copied_animations = None
         self.copied_bones = None
@@ -125,6 +125,9 @@ class MainWindow(wx.Frame):
         self.sizer.Layout()
         self.Show()
 
+        if filename:
+            self.load_main_file(dirname, filename)
+
     def exception_hook(self, e, value, trace):
         with MultiMessageDialog(self, '', 'Error', ''.join(traceback.format_exception(e, value, trace)), wx.OK) as dlg:
             dlg.ShowModal()
@@ -143,7 +146,7 @@ class MainWindow(wx.Frame):
             if dlg.ShowModal() == wx.ID_OK:
                 self.load_file(dlg.GetFilename(), dlg.GetDirectory(), obj)
 
-    def load_file(self, filename, dirname, obj):
+    def load_file(self, dirname, filename, obj):
         obj['dirname'] = dirname
         path = os.path.join(obj['dirname'], filename)
         self.statusbar.SetStatusText("Loading...")
@@ -186,14 +189,14 @@ class MainWindow(wx.Frame):
     def open_main_file(self):
         self.open_file(self.main)
 
-    def load_main_file(self, filename, dirname):
-        self.load_file(filename, dirname, self.main)
+    def load_main_file(self, dirname, filename):
+        self.load_file(dirname, filename, self.main)
 
     def open_side_file(self):
         self.open_file(self.side)
 
-    def load_side_file(self, filename, dirname):
-        self.load_file(filename, dirname, self.side)
+    def load_side_file(self, dirname, filename):
+        self.load_file(dirname, filename, self.side)
 
     def save_file(self, obj, filetype):
         if obj[filetype.lower()] is None:
@@ -229,5 +232,8 @@ class MainWindow(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App(False)
-    frame = MainWindow(None, "YaEAN Organizer v" + VERSION)
+    dirname = filename = None
+    if len(sys.argv) > 1:
+        dirname, filename = os.path.split(sys.argv[1])
+    frame = MainWindow(None, f"YaEAN Organizer v{VERSION}", dirname, filename)
     app.MainLoop()
