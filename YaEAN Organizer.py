@@ -144,7 +144,7 @@ class MainWindow(wx.Frame):
     def open_file(self, obj):
         with wx.FileDialog(self, "Choose a file", obj['dirname'], "", "*.ean;*.esk", wx.FD_OPEN) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
-                self.load_file(dlg.GetFilename(), dlg.GetDirectory(), obj)
+                self.load_file(dlg.GetDirectory(), dlg.GetFilename(), obj)
 
     def load_file(self, dirname, filename, obj):
         obj['dirname'] = dirname
