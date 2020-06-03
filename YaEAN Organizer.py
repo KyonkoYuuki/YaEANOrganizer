@@ -9,6 +9,7 @@ from wx.lib.dialogs import MultiMessageDialog
 
 from pyxenoverse.ean import EAN
 from pyxenoverse.esk import ESK
+from pyxenoverse.gui import create_backup
 from yaean.panels.anim_main import AnimMainPanel
 from yaean.panels.anim_side import AnimSidePanel
 from yaean.panels.bone_main import BoneMainPanel
@@ -209,6 +210,7 @@ class MainWindow(wx.Frame):
                 filename = dlg.GetFilename()
                 obj['dirname'] = dlg.GetDirectory()
                 self.statusbar.SetStatusText("Saving...")
+                create_backup(obj['dirname'], filename)
                 path = os.path.join(obj['dirname'], filename)
                 removed_nodes = obj[filetype.lower()].save(path)
                 msg = ''
