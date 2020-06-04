@@ -40,4 +40,5 @@ This tool to help edit ean and esk files for Xenoverse, among the features are:
 0.3.10 - Added ability to limit number of keyframes to remove
 0.3.11 - Added ability to drag/associate files to exe to open them, fixed bug with trimming animations
 0.3.12 - Add automatic backup creation on saving
+0.4.0 - Added two new functions: Mirroring L/R an animation and reversing an animation
 ```

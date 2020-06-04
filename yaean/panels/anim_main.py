@@ -60,6 +60,8 @@ class AnimMainPanel(wx.Panel):
         self.rotation_id = wx.NewId()
         self.scale_id = wx.NewId()
         self.trim_anim_id = wx.NewId()
+        self.mirror_anim_id = wx.NewId()
+        self.reverse_anim_id = wx.NewId()
         self.remove_keyframes_id = wx.NewId()
         self.target_camera_offset_id = wx.NewId()
         self.Bind(wx.EVT_MENU, self.on_open, id=wx.ID_OPEN)
@@ -75,6 +77,8 @@ class AnimMainPanel(wx.Panel):
         self.Bind(wx.EVT_MENU, self.on_set_rotation, id=self.rotation_id)
         self.Bind(wx.EVT_MENU, self.on_set_scale, id=self.scale_id)
         self.Bind(wx.EVT_MENU, self.on_trim_anim, id=self.trim_anim_id)
+        self.Bind(wx.EVT_MENU, self.on_mirror_anim, id=self.mirror_anim_id)
+        self.Bind(wx.EVT_MENU, self.on_reverse_anim, id=self.reverse_anim_id)
         self.Bind(wx.EVT_MENU, self.on_remove_keyframes, id=self.remove_keyframes_id)
         self.Bind(wx.EVT_MENU, self.on_set_target_camera_offset, id=self.target_camera_offset_id)
         accelerator_table = wx.AcceleratorTable([
@@ -137,6 +141,7 @@ class AnimMainPanel(wx.Panel):
         self.enable_copy_animation(paste, selected)
         rename = menu.Append(self.rename_id, "&Rename\tF2", " Rename selected animation")
         enable_selected(rename, selected)
+        menu.AppendSeparator()
         set_duration = menu.Append(self.duration_id, "Set &Duration", " Set duration on selected animation")
         enable_selected(set_duration, selected)
         offset = menu.Append(self.offset_id, "Set O&ffset", " Change offset of bones in an animation")
@@ -145,11 +150,17 @@ class AnimMainPanel(wx.Panel):
         enable_selected(rotation, selected)
         scale = menu.Append(self.scale_id, "Set &Scale", " Change scale of bones in an animation")
         enable_selected(scale, selected)
+        menu.AppendSeparator()
         trim_anim = menu.Append(self.trim_anim_id, "&Trim Animation", " Trim off frames from an animation")
         enable_selected(trim_anim, selected, True)
+        mirror_anim = menu.Append(self.mirror_anim_id, "&Mirror Animation", " Mirror animation L/R")
+        enable_selected(mirror_anim, selected)
+        reverse_anim = menu.Append(self.reverse_anim_id, "Re&verse Animation", " Reverse animation")
+        enable_selected(reverse_anim, selected)
         remove_keyframes = menu.Append(self.remove_keyframes_id,
                                        "Remove &Keyframes", " Removes keyframe data of bones from an animation")
         enable_selected(remove_keyframes, selected)
+        menu.AppendSeparator()
         target_camera_offset = menu.Append(self.target_camera_offset_id, "Set Target &Camera Offset",
                                            " Change offset of target camera (for cam.ean files)")
         enable_selected(target_camera_offset, selected)
@@ -459,3 +470,66 @@ class AnimMainPanel(wx.Panel):
                 self.anim_list.SetItem(selected[0], 2, str(animation.frame_count))
                 self.root.SetStatusText("Changed animation to start from frame {} and end on frame {}".format(
                     start_frame, end_frame))
+
+    def on_mirror_anim(self, _):
+        selected = list(get_selected_items(self.anim_list))
+        if not selected:
+            return
+        animations = [self.root.main['ean'].animations[i] for i in selected]
+        animations_changed = len(animations)
+
+        exclude_base = False
+        with wx.MessageDialog(self, 'Exclude b_C_Base?', 'Mirror Animation', wx.YES | wx.NO) as dlg:
+            if dlg.ShowModal() == wx.ID_YES:
+                exclude_base = True
+
+        # Swap left and right
+        for animation in animations:
+            for node in animation.nodes:
+                bone_name_parts = node.bone_name.split('_')
+
+                # Swap left and right animations first
+                if bone_name_parts[1] == 'R':
+                    bone_name_parts[1] = 'L'
+                    node.bone_name = '_'.join(bone_name_parts)
+                elif bone_name_parts[1] == 'L':
+                    bone_name_parts[1] = 'R'
+                    node.bone_name = '_'.join(bone_name_parts)
+                if node.bone_index == -1:
+                    with wx.MessageDialog(self, "Cannot mirror. Couldn't find matching L/R bones", "Error") as dlg:
+                        dlg.ShowModal()
+                    return
+
+        # Then we can go and do the math
+        for animation in animations:
+            for node in animation.nodes:
+                if exclude_base and node.bone_name == 'b_C_Base':
+                    continue
+                for keyframed_animation in node.keyframed_animations:
+                    if keyframed_animation.flag == POSITION_FLAG:
+                        for keyframe in keyframed_animation.keyframes:
+                            keyframe.x *= -1.0
+                    elif keyframed_animation.flag == ORIENTATION_FLAG:
+                        for keyframe in keyframed_animation.keyframes:
+                            keyframe.y *= -1.0
+                            keyframe.z *= -1.0
+
+        self.root.SetStatusText(f"Mirrored {animations_changed} animations")
+
+    def on_reverse_anim(self, _):
+        selected = list(get_selected_items(self.anim_list))
+        if not selected:
+            return
+        animations = [self.root.main['ean'].animations[i] for i in selected]
+        animations_changed = len(animations)
+
+        for animation in animations:
+            for node in animation.nodes:
+                for keyframed_animation in node.keyframed_animations:
+                    # In case we run into some keyframes created by old programs
+                    last_frame = keyframed_animation.keyframes[-1].frame
+                    keyframed_animation.keyframes.reverse()
+                    for keyframe in keyframed_animation.keyframes:
+                        keyframe.frame = last_frame - keyframe.frame
+
+        self.root.SetStatusText(f"Reversed {animations_changed} animations")
